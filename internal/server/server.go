@@ -1,6 +1,7 @@
 package server
 
 import (
+	"2025/internal/handlers"
 	"2025/internal/service"
 	"2025/internal/storage"
 
@@ -24,7 +25,12 @@ func NewServer(addr string, strg *storage.Storage, tsks chan service.Task) *Serv
 	}
 }
 
+func (s *Server) registerRoutes() {
+	s.router.POST("/check-links", handlers.CheckURLs(s.storage, s.tasks))
+}
+
 func (s *Server) Start() error {
+	s.registerRoutes()
 
 	return s.router.Run(s.address)
 }
