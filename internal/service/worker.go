@@ -3,6 +3,7 @@ package service
 import (
 	"2025/internal/check"
 	"log"
+	"sync"
 )
 
 type Result struct {
@@ -17,18 +18,22 @@ type Task struct {
 
 // StartWorkerPool запускает N воркеров,
 // которые будут обрабатывать задачи из канала tasks
-func StartWorkerPool(n int, tasks chan Task) {
+func StartWorkerPool(n int, tasks chan Task, wg *sync.WaitGroup) {
 	for i := 1; i <= n; i++ {
 		go func(workerId int) {
 			// Воркеры читают задачи из канала, пока канал не будет закрыт
 			for task := range tasks {
-				log.Printf("worker %d processing %s", workerId, task.URL)
+				wg.Add(1)
+				func() {
+					defer wg.Done()
+					log.Printf("worker %d processing %s", workerId, task.URL)
 
-				if check.CheckLink(task.URL) {
-					task.Res <- Result{URL: task.URL, Status: "available"}
-				} else {
-					task.Res <- Result{URL: task.URL, Status: "not available"}
-				}
+					if check.CheckLink(task.URL) {
+						task.Res <- Result{URL: task.URL, Status: "available"}
+					} else {
+						task.Res <- Result{URL: task.URL, Status: "not available"}
+					}
+				}()
 			}
 		}(i)
 	}
