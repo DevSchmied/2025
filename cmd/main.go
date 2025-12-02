@@ -23,7 +23,7 @@ func main() {
 	go service.StartWorkerPool(10, tasks, &wg)
 
 	jsonPath := filepath.Join("internal", "storage", "storage.json")
-	strg, err := storage.NewStorage(jsonPath)
+	strg, err := storage.NewStorage(jsonPath, nil)
 	if err != nil {
 		log.Fatalf("Error: %v\n", err)
 	}

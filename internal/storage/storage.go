@@ -8,12 +8,32 @@ import (
 	"sync"
 )
 
+// FileReader — интерфейс для абстракции чтения/записи файлов (DI).
+type FileReader interface {
+	ReadFile(path string) ([]byte, error)
+	WriteFile(name string, data []byte, perm os.FileMode) error
+}
+
+// OSFileReader — реализация FileReader поверх os.
+type OSFileReader struct{}
+
+// ReadFile — чтение файла через os.ReadFile.
+func (oSFileReader OSFileReader) ReadFile(path string) ([]byte, error) {
+	return os.ReadFile(path)
+}
+
+// WriteFile — запись файла через os.WriteFile.
+func (oSFileReader OSFileReader) WriteFile(name string, data []byte, perm os.FileMode) error {
+	return os.WriteFile(name, data, perm)
+}
+
 // Storage хранит данные в памяти и управляет чтением/записью JSON-файла.
 type Storage struct {
 	mu          sync.Mutex
 	Data        map[int]map[string]string
 	LastLinkNum int
 	filePath    string
+	reader      FileReader
 }
 
 // storageFileData — DTO для сериализации данных в JSON.
@@ -23,11 +43,16 @@ type storageFileData struct {
 }
 
 // NewStorage создаёт объект хранилища и сразу загружает данные с диска.
-func NewStorage(filePath string) (*Storage, error) {
+func NewStorage(filePath string, reader FileReader) (*Storage, error) {
+	if reader == nil {
+		reader = OSFileReader{}
+	}
+
 	strg := &Storage{
 		Data:        make(map[int]map[string]string),
 		LastLinkNum: 0,
 		filePath:    filePath,
+		reader:      reader,
 	}
 
 	if err := strg.LoadFromDisk(); err != nil {
@@ -43,7 +68,7 @@ func (strg *Storage) LoadFromDisk() error {
 	strg.mu.Lock()
 	defer strg.mu.Unlock()
 
-	fileData, err := os.ReadFile(strg.filePath)
+	fileData, err := strg.reader.ReadFile(strg.filePath)
 	if err != nil {
 		// Файл отсутствует — инициализируем пустое состояние
 		if errors.Is(err, os.ErrNotExist) {
@@ -87,7 +112,7 @@ func (strg *Storage) SaveToDisk() error {
 	}
 
 	// Записываем в файл (файл будет создан, если его нет)
-	return os.WriteFile(strg.filePath, encoded, 0644)
+	return strg.reader.WriteFile(strg.filePath, encoded, 0644)
 }
 
 // GenerateID увеличивает счётчик и возвращает новый номер.
