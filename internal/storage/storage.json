@@ -1,5 +1,5 @@
 {
-  "last_link_num": 2,
+  "last_link_num": 3,
   "data": {
     "1": {
       "google.com": "available",
@@ -7,6 +7,11 @@
       "yandex.ru": "available"
     },
     "2": {
+      "google.com": "available",
+      "yandex.ru": "available"
+    },
+    "3": {
+      "bad.zzz": "not available",
       "google.com": "available",
       "yandex.ru": "available"
     }
